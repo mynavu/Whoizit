@@ -110,8 +110,13 @@ function App() {
   if (!session) {
     return (
       <div>
-        <div className='title-font text-5xl tracking-wider'>WHOIZIT?</div>
-        <button onClick={signIn}>Sign in with Google</button>
+        <div className="flex flex-col gap-5 items-center">
+          <p>◇ ⬗ ◆ ⬖ ◇</p>
+          <div className='title-font text-5xl tracking-wider yellow'>WHOIZIT?</div>
+          <button className='group' onClick={signIn}><span className="group-hover:hidden">◇</span>
+          <span className="hidden group-hover:inline">◆</span> Sign in with Google <span className="group-hover:hidden">◇</span>
+          <span className="hidden group-hover:inline">◆</span></button>
+        </div>
       </div>
     )
   } else {
@@ -178,18 +183,18 @@ function App() {
             setBothPlayersIn={setBothPlayersIn}
           />
         )}
-        {/* 
+        
         
         <button 
-            className={`blue-border rounded-md p-0.5 ${(joinGame || createGame) ? 'block' : 'hidden'}`}
+            className={`group ${ allCards.length === 0 && ((joinGame && cardSet === null) || (!joinGame && gameId !== null)) ? 'block' : 'hidden'}`}
             onClick={() => {
-                setJoinGame(false);
-                setCreateGame(false);
+                window.location.reload();
             }}
             >
-            Back
+            <span className="group-hover:hidden">▹</span>
+            <span className="hidden group-hover:inline">▸</span> Back
           </button>
-        */}
+        
         
       </div>
     )
