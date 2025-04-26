@@ -118,7 +118,8 @@ function App() {
       <div>
         <div className="flex flex-col gap-5 items-center">
           <p>◇ ⬗ ◆ ⬖ ◇</p>
-          <div className='title-font text-5xl tracking-wider yellow margin-top'>WHOIZIT?</div>
+          <div className='title-font text-5xl tracking-wider margin-top gap-5'>WHOIZIT?</div>
+          <p><span className="material-symbols-outlined">groups_3</span></p>
           <button className='group' onClick={signIn}><span className="group-hover:hidden">◇</span>
           <span className="hidden group-hover:inline">◆</span> Sign in with Google <span className="group-hover:hidden">◇</span>
           <span className="hidden group-hover:inline">◆</span></button>
@@ -134,12 +135,12 @@ function App() {
           <div>{session.user.user_metadata.name}</div>
         </div>
         
-        <div className={`flex flex-col items-center ${(oppChosen === null || yourChosen === null) && !createSet ? "block" : "hidden"}`}>
-          <div className='title-font text-5xl tracking-wider margin-top'>WHOIZIT?</div>
-          <p><span className="material-symbols-outlined">groups_3</span></p>
+        <div className={`flex flex-col items-center gap-5 ${(oppChosen === null || yourChosen === null) && !createSet ? "block" : "hidden"}`}>
+          <div className='title-font text-5xl tracking-wider margin-top'>{yourChosen === null && allCards.length > 0 && bothPlayersIn ? 'CHOOSE WISELY' : 'WHOIZIT?'}</div>
+          <p><span className="material-symbols-outlined">{yourChosen === null && allCards.length > 0 && bothPlayersIn ? 'playing_cards' : 'groups_3'}</span></p>
           <div className={gameId !== null && cardSet !== null && !bothPlayersIn ? 'flex flex-col items-center' : 'hidden' }>
             <div>Your code is:</div>
-            <div className='title-font text-xl'>{gameId}</div>
+            <div className='title-font text-xl pink'>{gameId}</div>
           </div>
         </div>
 
@@ -158,14 +159,14 @@ function App() {
 
         {createGame && cardSet === null && (
           <div>
-            <div className='flex flex-row gap-5 mt-2'>
+            <div className='flex flex-row gap-5 group'>
                     <select className='blue-background light-blue rounded-md' id="setOfSetss" defaultValue="" onChange={(e) => setCurrentCardSet(e.target.value)}>
                       <option value="">Choose set</option>
                       {cardSets.map((set) => (
                         <option key={set.id} value={set.id}>{set.name}</option>
                       ))}
                     </select>
-                    <button className='rounded-md p-0.5 group' onClick={confirmSet}>Confirm selection <span className="group-hover:hidden">◇</span>
+                    <button className='rounded-md p-0.5' onClick={confirmSet}>Confirm selection <span className="group-hover:hidden">◇</span>
                     <span className="hidden group-hover:inline">◆</span></button>
             </div> 
           </div>

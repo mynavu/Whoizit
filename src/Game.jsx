@@ -46,6 +46,7 @@ export function Game({
   const [yourChoice, setYourChoice] = useState(null);
   const hasInitialized = useRef(false);
   const messageEndRef = useRef(null);
+  const startingPlayer = useRef(null);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -176,12 +177,14 @@ export function Game({
           }
         }
 
-        if (firstPlayer === null && secondPlayer === null) {
+        if (startingPlayer.current === null) {
             let first = usersOnline[Object.keys(usersOnline)[0]][0].name;
             let second = usersOnline[Object.keys(usersOnline)[1]][0].name;
+            startingPlayer.current = usersOnline[Object.keys(usersOnline)[0]][0].name;
             setFirstPlayer(first);
             setSecondPlayer(second);
-            console.log('first is', usersOnline[Object.keys(usersOnline)[0]][0].name);
+            console.log("startingPlayer.current", startingPlayer.current);
+            console.log("firstPlayer", firstPlayer);
             if (first === session?.user?.user_metadata?.name) {
                 setEnableChoice(true);
             }
@@ -510,7 +513,7 @@ export function Game({
     {allCards.length > 0 && !bothPlayersIn && winner === null && <p>Waiting for other player...</p>}
     {allCards.length > 0 && bothPlayersIn && (
       <div>
-        <div className={`flex flex-col items-center gap-5 ${yourChosen === null ? 'block' : 'hidden'}`}>
+        <div className={`flex flex-col items-center gap-5 margin-top-s ${yourChosen === null ? 'block' : 'hidden'}`}>
           <div className="flex flex-row gap-5 mt-2">
             <select
               className="blue-background light-blue rounded-md"
