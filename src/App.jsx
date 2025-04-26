@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabaseClient';
 import { HomePage } from './HomePage';
 import { Game } from './Game';
-
+import { CustomSet } from './CustomSet';
 
 function App() {
   const [session, setSession] = useState(null);
@@ -18,23 +18,26 @@ function App() {
   const [yourChosen, setYourChosen] = useState(null);
   const [oppChosen, setOppChosen] = useState(null);
   const [bothPlayersIn, setBothPlayersIn] = useState(false);
+  const [createSet, setCreateSet] = useState(false);
 
   const allCardsRef = useRef([]);
+  const userEmail = useRef();
   
-
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
+      
     })
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
+      setSession(session);
+      userEmail.current = session?.user?.user_metadata?.email;
     })
     return () => subscription.unsubscribe()
   }, [])
 
-   // console.log(session)
+  //console.log(session, session?.user?.user_metadata?.email)
 
   // SIGN IN
   const signIn = async () => {
@@ -49,17 +52,28 @@ function App() {
   };
 
   async function loadSet() {
+    if (!userEmail.current) {
+      console.error('userEmail.current is not set');
+      return;
+    }
+  
     const { data, error } = await supabase
-        .from('public_card_sets')
-        .select('*')    
-        setCardSets(data.map((set) => ({name: set.name, id: set.id})));
-        //console.log(data);
+      .from('public_card_sets')
+      .select('*')
+      .or(`public.eq.true,user_email.eq."${userEmail.current}"`);
+  
+    if (error) {
+      console.error('Error loading sets:', error);
+      return;
+    }
+    setCardSets(data.map((set) => ({name: set.name, id: set.id})));
   }
 
   useEffect(() => {
-    loadSet();
-  }, []);
-  
+    if (session && userEmail.current) {   // wait until session is ready
+      loadSet();
+    }
+  }, [session]);
 
   async function confirmSet() {
     setCardSet(currentCardSet);
@@ -76,13 +90,6 @@ function App() {
     .eq('card_set_id', currentCardSet); 
     setAllCards(data);
     allCardsRef.current = data;
-
-    setTimeout(() => {
-      console.log("After setting cards:", allCards);
-    }, 1000); 
-    setTimeout(() => {
-      console.log("After setting cards:", allCards);
-    }, 9000); 
   
     const promises = data.map(({ cards }) => {
       return new Promise((resolve, reject) => {
@@ -93,7 +100,6 @@ function App() {
         img.onerror = () => reject(new Error(`Failed to load image: ${preloadLink}`));
       });
     });
-    console.log("data",data);
     try {
       await Promise.all(promises);
       console.log('All images preloaded successfully');
@@ -112,7 +118,7 @@ function App() {
       <div>
         <div className="flex flex-col gap-5 items-center">
           <p>◇ ⬗ ◆ ⬖ ◇</p>
-          <div className='title-font text-5xl tracking-wider yellow'>WHOIZIT?</div>
+          <div className='title-font text-5xl tracking-wider yellow margin-top'>WHOIZIT?</div>
           <button className='group' onClick={signIn}><span className="group-hover:hidden">◇</span>
           <span className="hidden group-hover:inline">◆</span> Sign in with Google <span className="group-hover:hidden">◇</span>
           <span className="hidden group-hover:inline">◆</span></button>
@@ -128,8 +134,8 @@ function App() {
           <div>{session.user.user_metadata.name}</div>
         </div>
         
-        <div className={`flex flex-col items-center ${oppChosen === null || yourChosen === null ? "block" : "hidden"}`}>
-          <div className='title-font text-5xl tracking-wider'>WHOIZIT?</div>
+        <div className={`flex flex-col items-center ${(oppChosen === null || yourChosen === null) && !createSet ? "block" : "hidden"}`}>
+          <div className='title-font text-5xl tracking-wider margin-top'>WHOIZIT?</div>
           <p><span className="material-symbols-outlined">groups_3</span></p>
           <div className={gameId !== null && cardSet !== null && !bothPlayersIn ? 'flex flex-col items-center' : 'hidden' }>
             <div>Your code is:</div>
@@ -137,7 +143,7 @@ function App() {
           </div>
         </div>
 
-        {gameId === null && (
+        {!createSet && gameId === null && (
           <HomePage 
             createGame={createGame} 
             setCreateGame={setCreateGame} 
@@ -145,6 +151,8 @@ function App() {
             setGameId={setGameId} 
             joinGame={joinGame} 
             setJoinGame={setJoinGame} 
+            createSet={createSet} 
+            setCreateSet={setCreateSet}
           />
         )}
 
@@ -161,6 +169,14 @@ function App() {
                     <span className="hidden group-hover:inline">◆</span></button>
             </div> 
           </div>
+        )}
+
+        {createSet && (
+          <CustomSet 
+          createSet={createSet} 
+          setCreateSet={setCreateSet}
+          session={session}
+          />
         )}
 
         {gameId !== null && (
@@ -186,19 +202,19 @@ function App() {
         
         
         <button 
-            className={`group ${ allCards.length === 0 && ((joinGame && cardSet === null) || (!joinGame && gameId !== null)) ? 'block' : 'hidden'}`}
+            className={`group ${ createSet || allCards.length === 0 && ((gameId === null && joinGame && cardSet === null) || (!joinGame && gameId !== null)) ? 'block' : 'hidden'}`}
             onClick={() => {
                 window.location.reload();
             }}
             >
             <span className="group-hover:hidden">▹</span>
             <span className="hidden group-hover:inline">▸</span> Back
-          </button>
-        
-        
+        </button>
+        <p className={`group ${ allCards.length === 0 && (gameId !== null && joinGame && cardSet === null) ? 'block' : 'hidden'}`}>Loading...</p>
+        <div></div>
+        <div></div>
       </div>
     )
-
   }
 }
 

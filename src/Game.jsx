@@ -155,30 +155,35 @@ export function Game({
     channelRef.current.on('presence', { event: 'sync' }, () => {
       const usersOnline = channelRef.current.presenceState();
       if (Object.keys(usersOnline).length > 2) {
+        console.log('Only two players allowed')
         channelRef.current.unsubscribe();
       } else if (Object.keys(usersOnline).length === 2) {
+        /*
         console.log(
           'Users in the room:',
           usersOnline[Object.keys(usersOnline)[0]][0].name,
           usersOnline[Object.keys(usersOnline)[1]][0].name
         );
+        */
         // Check if both users are ready
         const allReady = Object.values(usersOnline).every((user) => user[0].ready);
+        //console.log("allReady", allReady);
         if (allReady) {
           loadSetOrSendSet();
           if (winner === null) {
             setBothPlayersIn(true);
+            //console.log("bothPlayersIn", bothPlayersIn)
           }
         }
 
-        if (firstPlayer === null) {
+        if (firstPlayer === null && secondPlayer === null) {
             let first = usersOnline[Object.keys(usersOnline)[0]][0].name;
             let second = usersOnline[Object.keys(usersOnline)[1]][0].name;
             setFirstPlayer(first);
             setSecondPlayer(second);
+            console.log('first is', usersOnline[Object.keys(usersOnline)[0]][0].name);
             if (first === session?.user?.user_metadata?.name) {
                 setEnableChoice(true);
-                console.log('first is', first);
             }
         }
       }
@@ -560,16 +565,16 @@ export function Game({
                     <img
                       onClick={() => flipCard(index)}
                       key={card.name}
-                      className={`w-[80px] h-[80px] object-cover ${
+                      className={`w-[80px] h-[80px] object-cover rounded-xl blue-border ${
                         card.up
-                          ? 'rounded-xl blue-border'
-                          : 'rounded-xl filter brightness-50 grayscale fade-border'
+                          ? ''
+                          : 'filter brightness-50 grayscale'
                       }`}
                       src={card.image_url}
                     />
                     <p
                       key={index}
-                      className={`text-sm ${card.up ? 'blue' : 'text-gray-500'}`}
+                      className={`text-sm ${card.up ? 'blue' : 'text-gray-400'}`}
                     >
                       {card.name}
                     </p>
@@ -581,19 +586,18 @@ export function Game({
                 {oppSet.map((card) => (
                   <img
                     key={card.name}
-                    className="rounded-xl w-[80px] h-[80px] object-cover"
-                    src={card.up ? '../card.png' : '../card_fade.png'}
+                    className={`rounded-xl w-[80px] h-[80px] object-cover ${card.up ? '' : 'filter brightness-50 grayscale'}`}
+                    src='../card.png'
                   />
                 ))}
               </div>
             </div>
 
             {/* Second row: Game log section */}
-            <div className="blue-border light-blue blue-background rounded-2xl flex flex-col gap-2 items-center p-3">
+            <div className="blue-border light-blue blue-background rounded-2xl flex flex-col gap-2 items-center padding">
               <div></div>
               <p className="title-font">⬗ Game Log ⬖</p>
-              <div className="light-blue-background blue-border rounded-2xl flex-grow w-full">
-                <div className="flex flex-col overflow-y-auto blue w-full break-words p-2 thick-border rounded-2xl text-sm gap-1 h-[62vh] scrollbar-hide">
+                <div className="flex flex-col overflow-y-auto blue w-full break-words p-2 light-blue-background rounded-2xl text-sm gap-1 h-[62vh] scrollbar-hide padding">
                   {messages.map((msg) => (
                     <div
                     key={crypto.randomUUID()}
@@ -604,11 +608,11 @@ export function Game({
                     `}
                   >
                     <div
-                      className={`p-2 rounded-md light-blue
+                      className={`padding rounded-xl light-blue
                         ${
                           msg?.user_name === session?.user?.user_metadata?.name
                             ? 'rounded-br-none bg-blue-400' // Sender message bubble
-                            : 'rounded-bl-none bg-blue-600' // Receiver message bubble
+                            : 'rounded-bl-none bg-blue-500' // Receiver message bubble
                         }
                         ${
                           msg?.type === 'question' || msg?.type === 'answer' || msg?.type === 'guess'
@@ -631,7 +635,6 @@ export function Game({
                   ))}
                   <div ref={messageEndRef} />
                 </div>
-              </div>
 
               <div className={enableChoice ? 'flex flex-row gap-3' : 'hidden'}>
                 <button onClick={() => askOrGuess('ask')} className="group">
@@ -690,15 +693,13 @@ export function Game({
                   <span className="hidden group-hover:inline">▸</span> answer
                 </button>
               </div>
-              <div className='yellow'></div>
             </div>
           </div>
-          <div></div>
         </div>
       </div>
     )}
     
-    <div className={winner !== null ? 'flex flex-col items-center gap-5' : 'hidden'}>
+    <div className={winner !== null ? 'flex flex-col items-center gap-5 margin-top-s' : 'hidden'}>
       <div className="title-font yellow text-5xl">
         {winner === session.user.user_metadata.name ? "You Win!" : "You Lose"}
       </div>
