@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient';
 import { HomePage } from './HomePage';
 import { Game } from './Game';
 import { CustomSet } from './CustomSet';
+import { MySets } from './MySets';
 
 function App() {
   const [session, setSession] = useState(null);
@@ -19,9 +20,15 @@ function App() {
   const [oppChosen, setOppChosen] = useState(null);
   const [bothPlayersIn, setBothPlayersIn] = useState(false);
   const [createSet, setCreateSet] = useState(false);
+  const [viewSets, setViewSets] = useState(false);
+  const [editSet, setEditSet] = useState([]);
 
   const allCardsRef = useRef([]);
   const userEmail = useRef();
+
+  const [privateSets, setPrivateSets] = useState([]);
+
+    
   
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -119,10 +126,10 @@ function App() {
         <div className="flex flex-col gap-5 items-center">
           <p>◇ ⬗ ◆ ⬖ ◇</p>
           <div className='title-font text-5xl tracking-wider margin-top gap-5'>WHOIZIT?</div>
-          <p><span className="material-symbols-outlined">groups_3</span></p>
-          <button className='group' onClick={signIn}><span className="group-hover:hidden">◇</span>
-          <span className="hidden group-hover:inline">◆</span> Sign in with Google <span className="group-hover:hidden">◇</span>
-          <span className="hidden group-hover:inline">◆</span></button>
+          <p><span className="material-symbols-outlined icon-big">groups_3</span></p>
+          <button className='group' onClick={signIn}><span className="group-hover:hidden">⬦</span>
+          <span className="hidden group-hover:inline">⬥</span> Sign in with Google <span className="group-hover:hidden">⬦</span>
+          <span className="hidden group-hover:inline">⬥</span></button>
         </div>
       </div>
     )
@@ -135,16 +142,16 @@ function App() {
           <div>{session.user.user_metadata.name}</div>
         </div>
         
-        <div className={`flex flex-col items-center gap-5 ${(oppChosen === null || yourChosen === null) && !createSet ? "block" : "hidden"}`}>
+        <div className={`flex flex-col items-center gap-5 ${(oppChosen === null || yourChosen === null) && !createSet && !viewSets ? "block" : "hidden"}`}>
           <div className='title-font text-5xl tracking-wider margin-top'>{yourChosen === null && allCards.length > 0 && bothPlayersIn ? 'CHOOSE WISELY' : 'WHOIZIT?'}</div>
-          <p><span className="material-symbols-outlined">{yourChosen === null && allCards.length > 0 && bothPlayersIn ? 'playing_cards' : 'groups_3'}</span></p>
+          <p><span className="material-symbols-outlined icon-big">{yourChosen === null && allCards.length > 0 && bothPlayersIn ? 'playing_cards' : 'groups_3'}</span></p>
           <div className={gameId !== null && cardSet !== null && !bothPlayersIn ? 'flex flex-col items-center' : 'hidden' }>
             <div>Your code is:</div>
             <div className='title-font text-xl pink'>{gameId}</div>
           </div>
         </div>
 
-        {!createSet && gameId === null && (
+        {!viewSets && !createSet && gameId === null && (
           <HomePage 
             createGame={createGame} 
             setCreateGame={setCreateGame} 
@@ -154,6 +161,11 @@ function App() {
             setJoinGame={setJoinGame} 
             createSet={createSet} 
             setCreateSet={setCreateSet}
+            privateSets={privateSets}
+            setPrivateSets={setPrivateSets}
+            userEmail={userEmail}
+            viewSets={viewSets}
+            setViewSets={setViewSets}
           />
         )}
 
@@ -166,8 +178,8 @@ function App() {
                         <option key={set.id} value={set.id}>{set.name}</option>
                       ))}
                     </select>
-                    <button className='rounded-md p-0.5' onClick={confirmSet}>Confirm selection <span className="group-hover:hidden">◇</span>
-                    <span className="hidden group-hover:inline">◆</span></button>
+                    <button className='rounded-md p-0.5' onClick={confirmSet}>Confirm selection <span className="group-hover:hidden">⬦</span>
+                    <span className="hidden group-hover:inline">⬥</span></button>
             </div> 
           </div>
         )}
@@ -177,6 +189,18 @@ function App() {
           createSet={createSet} 
           setCreateSet={setCreateSet}
           session={session}
+          />
+        )}
+
+        {viewSets && (
+          <MySets 
+          userEmail={userEmail}
+          viewSets={viewSets}
+          setViewSets={setViewSets}
+          privateSets={privateSets}
+          setPrivateSets={setPrivateSets}
+          editSet={editSet} 
+          setEditSet={setEditSet}
           />
         )}
 
@@ -203,7 +227,7 @@ function App() {
         
         
         <button 
-            className={`group ${ createSet || allCards.length === 0 && ((gameId === null && joinGame && cardSet === null) || (!joinGame && gameId !== null)) ? 'block' : 'hidden'}`}
+            className={`group ${ (editSet.length === 0 && viewSets) || createSet || allCards.length === 0 && ((gameId === null && joinGame && cardSet === null) || (!joinGame && gameId !== null)) ? 'block' : 'hidden'}`}
             onClick={() => {
                 window.location.reload();
             }}

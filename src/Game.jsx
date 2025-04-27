@@ -333,6 +333,7 @@ export function Game({
 
   const sendMessage = async (e) => {
     e.preventDefault();
+    if (newMessage === '') {return};
     channelRef.current.send({
       type: 'broadcast',
       event: 'test-my-messages',
@@ -347,6 +348,7 @@ export function Game({
 
   const sendQuestion = async (e) => {
     e.preventDefault();
+    if (newMessage === '') {return};
     setEnableQuestion(false);
     channelRef.current.send({
       type: 'broadcast',
@@ -370,6 +372,7 @@ export function Game({
 
   const sendAnswer = async (e) => {
     e.preventDefault();
+    if (newMessage === '') {return};
     setEnableAnswer(false);
     channelRef.current.send({
       type: 'broadcast',
@@ -388,16 +391,18 @@ export function Game({
     e.preventDefault();
     setEnableGuess(false);
     setGuess(currentGuess);
-    let result;
+    let result = allCards.find(card => String(card.card_id) === String(currentGuess))?.cards?.name;
+    let winOrLose;
     if (currentGuess === oppChosen) {
-      result = String(session.user.user_metadata.name) + ' WINS';
-      const response = await supabase.from('game_ids').delete().eq('id', gameId);
-      setWinner(session.user.user_metadata.name);
-      setBothPlayersIn(false);
-      celebrate();
-      callWinner();
+      winOrLose = 'correct-guess';
+      setTimeout(() => {
+        setWinner(session.user.user_metadata.name);
+        setBothPlayersIn(false);
+        celebrate();
+        callWinner();
+      }, "2000")
     } else {
-      result = `${allCards.find(card => String(card.card_id) === String(currentGuess))?.cards?.name}`;
+      winOrLose = 'incorrect-guess';
     }
     channelRef.current.send({
       type: 'broadcast',
@@ -405,7 +410,7 @@ export function Game({
       payload: {
         message: result,
         user_name: session?.user?.user_metadata?.name,
-        type: 'guess',
+        type: winOrLose,
       },
     });
     callNextTurn('opp');
@@ -451,6 +456,13 @@ export function Game({
     } else {
       setEnableGuess(true);
     }
+  }
+
+  function goBack() {
+    setEnableChoice(true);
+    setEnableQuestion(false);
+    setEnableGuess(false);
+    setYourChoice(null);
   }
 
   function callNextTurn(nextPlayer) {
@@ -529,8 +541,8 @@ export function Game({
               ))}
             </select>
             <button className="group" onClick={confirmChosen}>
-              Confirm selection <span className="group-hover:hidden">◇</span>
-              <span className="hidden group-hover:inline">◆</span>
+              Confirm selection <span className="group-hover:hidden">⬦</span>
+              <span className="hidden group-hover:inline">⬥</span>
             </button>
           </div>
           {currentChosen !== null && (
@@ -551,17 +563,23 @@ export function Game({
               ? 'flex flex-col gap-5'
               : 'hidden'
           }
-        >
-          <div className={firstPlayer && secondPlayer ? 'flex justify-center' : 'hidden'}>
-            <div className="title-font text-3xl yellow">
-              {firstPlayer} vs {secondPlayer}
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-[1fr_8fr_2fr_1fr] h-100vh gap-4">
-            <div></div>
-            {/* First row: Card display section */}
-            <div className="flex flex-col gap-3 overflow-y-auto">
+        >    
+          <div className="grid grid-cols-[1fr_8fr_2fr_1fr] h-auto gap-4">
+              <div></div>
+              {/* First row: Card display section */}
+              <div className="flex flex-col gap-3 overflow-y-auto scrollbar-hide">
+              <div className="flex justify-center title-font text-3xl yellow">
+                {firstPlayer === session?.user?.user_metadata?.name ? firstPlayer : secondPlayer }
+              </div>
+              <div className='flex flex-col items-center'>
+                <img
+                  src={allCards.find(card => String(card.card_id) === String(yourChosen))?.cards?.image_url}
+                  className="w-[80px] h-[80px] object-cover rounded-xl yellow-border"
+                />
+                <p className="yellow text-sm">
+                  Chosen: {allCards.find(card => String(card.card_id) === String(oppChosen))?.cards?.name}
+                </p>
+              </div>
               <div className="flex flex-row flex-wrap justify-around gap-1.5">
                 {yourSet.map((card, index) => (
                   <div key={index} className="flex flex-col items-center">
@@ -594,109 +612,118 @@ export function Game({
                   />
                 ))}
               </div>
+              <div className="flex justify-center title-font text-3xl yellow">
+                {secondPlayer === session?.user?.user_metadata?.name ? firstPlayer : secondPlayer}
+              </div>
             </div>
 
             {/* Second row: Game log section */}
-            <div className="blue-border light-blue blue-background rounded-2xl flex flex-col gap-2 items-center padding">
-              <div></div>
-              <p className="title-font">⬗ Game Log ⬖</p>
-                <div className="flex flex-col overflow-y-auto blue w-full break-words p-2 light-blue-background rounded-2xl text-sm gap-1 h-[62vh] scrollbar-hide padding">
-                  {messages.map((msg) => (
-                    <div
-                    key={crypto.randomUUID()}
-                    className={`flex p-2  whitespace-pre-wrap
-                      ${msg?.user_name === session?.user?.user_metadata?.name
-                        ? 'justify-end'
-                        : 'justify-start'}
-                    `}
-                  >
-                    <div
-                      className={`padding rounded-xl light-blue
-                        ${
-                          msg?.user_name === session?.user?.user_metadata?.name
-                            ? 'rounded-br-none bg-blue-400' // Sender message bubble
-                            : 'rounded-bl-none bg-blue-500' // Receiver message bubble
-                        }
-                        ${
-                          msg?.type === 'question' || msg?.type === 'answer' || msg?.type === 'guess'
-                            ? 'yellow'
-                            : ''
-                        }
+            <div className='flex flex-col justify-center h-100vh'>
+              <div className="blue-border light-blue blue-background rounded-2xl flex flex-col gap-2 items-center padding h-[80vh]">
+                <div></div>
+                <p className="title-font">⬗ Game Log ⬖</p>
+                  <div className="flex flex-col overflow-y-auto blue w-full break-words p-2 light-blue-background rounded-2xl text-sm gap-1 h-full scrollbar-hide padding">
+                    {messages.map((msg) => (
+                      <div
+                      key={crypto.randomUUID()}
+                      className={`flex p-2  whitespace-pre-wrap
+                        ${msg?.user_name === session?.user?.user_metadata?.name
+                          ? 'justify-end'
+                          : 'justify-start'}
                       `}
                     >
-                      {msg?.type === 'question'
-                        ? 'Q: '
-                        : msg?.type === 'answer'
-                        ? 'A: '
-                        : msg?.type === 'guess'
-                        ? 'Incorrect Guess: '
-                        : ''}
-                      {msg.message}
+                      <div
+                        className={`padding rounded-xl light-blue
+                          ${
+                            msg?.user_name === session?.user?.user_metadata?.name
+                              ? 'rounded-br-none bg-blue-400' // Sender message bubble
+                              : 'rounded-bl-none bg-blue-500' // Receiver message bubble
+                          }
+                          ${
+                            msg?.type === 'question' || msg?.type === 'answer'
+                              ? 'yellow'
+                              : msg?.type === 'incorrect-guess' ? 'red' : msg?.type === 'correct-guess' ? 'green' : ''
+                          }
+                        `}
+                      >
+                        {msg?.type === 'question'
+                          ? 'Q: '
+                          : msg?.type === 'answer'
+                          ? 'A: '
+                          : msg?.type === 'incorrect-guess'
+                          ? 'Incorrect Guess: '
+                          : msg?.type === 'correct-guess'
+                          ? 'Correct Guess: '
+                          : ''}
+                        {msg.message}
+                      </div>
                     </div>
+                    
+                    ))}
+                    <div ref={messageEndRef} />
                   </div>
-                  
-                  ))}
-                  <div ref={messageEndRef} />
+
+                <div className={enableChoice ? 'flex flex-row gap-3' : 'hidden'}>
+                  <button onClick={() => askOrGuess('ask')} className="group">
+                    Ask <span className="group-hover:hidden">⬦</span>
+                    <span className="hidden group-hover:inline">⬥</span>
+                  </button>
+                  <button onClick={() => askOrGuess('guess')} className="group">
+                    Guess <span className="group-hover:hidden">⬦</span>
+                    <span className="hidden group-hover:inline">⬥</span>
+                  </button>
+                </div>
+                
+                <div className={enableGuess ? 'flex flex-col' : 'hidden'}>
+                  <select
+                    className="light-blue-background blue rounded-md"
+                    id="setOfCards"
+                    defaultValue=""
+                    onChange={(e) => setCurrentGuess(e.target.value)}
+                  >
+                    <option value="">Guess one</option>
+                    {allCards.map((card) => (
+                      <option key={card.card_id} value={card.card_id}>
+                        {card.cards.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button onClick={sendGuess} className="group">
+                    Confirm Guess <span className="group-hover:hidden">⬦</span>
+                    <span className="hidden group-hover:inline">⬥</span>
+                  </button>
                 </div>
 
-              <div className={enableChoice ? 'flex flex-row gap-3' : 'hidden'}>
-                <button onClick={() => askOrGuess('ask')} className="group">
-                  Ask <span className="group-hover:hidden">◇</span>
-                  <span className="hidden group-hover:inline">◆</span>
-                </button>
-                <button onClick={() => askOrGuess('guess')} className="group">
-                  Guess <span className="group-hover:hidden">◇</span>
-                  <span className="hidden group-hover:inline">◆</span>
-                </button>
-              </div>
-              
-              <div className={enableGuess ? 'flex flex-col' : 'hidden'}>
-                <select
-                  className="light-blue-background blue rounded-md"
-                  id="setOfCards"
-                  defaultValue=""
-                  onChange={(e) => setCurrentGuess(e.target.value)}
-                >
-                  <option value="">Guess one</option>
-                  {allCards.map((card) => (
-                    <option key={card.card_id} value={card.card_id}>
-                      {card.cards.name}
-                    </option>
-                  ))}
-                </select>
-                <button onClick={sendGuess} className="group">
-                  Confirm Guess <span className="group-hover:hidden">◇</span>
-                  <span className="hidden group-hover:inline">◆</span>
-                </button>
-              </div>
-              
-              <input
-                className="bg-white rounded-md text-sm w-full"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-              />
-              
-              <div className="flex flex-row gap-5">
-                <button className="group" onClick={sendMessage}>
-                  <span className="group-hover:hidden">▹</span>
-                  <span className="hidden group-hover:inline">▸</span> send
-                </button>
-                <button
-                  className={`group ${enableQuestion ? 'block' : 'hidden'}`}
-                  onClick={sendQuestion}
-                >
-                  <span className="group-hover:hidden">▹</span>
-                  <span className="hidden group-hover:inline">▸</span> question
-                </button>
-                <button
-                  className={`group ${enableAnswer ? 'block' : 'hidden'}`}
-                  onClick={sendAnswer}
-                >
-                  <span className="group-hover:hidden">▹</span>
-                  <span className="hidden group-hover:inline">▸</span> answer
-                </button>
+                <button onClick={goBack} className={` group ${enableGuess || enableQuestion ? 'block' : 'hidden'}`}><span className="group-hover:hidden">▹ </span>
+                <span className="hidden group-hover:inline">▸ </span> back</button>
+                
+                <input
+                  className="bg-white rounded-md text-sm w-full"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                />
+                
+                <div className="flex flex-row gap-5">
+                  <button className="group" onClick={sendMessage}>
+                    send <span className="group-hover:hidden">□</span>
+                    <span className="hidden group-hover:inline">■</span>
+                  </button>
+                  <button
+                    className={`group ${enableQuestion ? 'block' : 'hidden'}`}
+                    onClick={sendQuestion}
+                  >question <span className="group-hover:hidden">○</span>
+                    <span className="hidden group-hover:inline">●</span>
+                  </button>
+                  <button
+                    className={`group ${enableAnswer ? 'block' : 'hidden'}`}
+                    onClick={sendAnswer}
+                  >answer <span className="group-hover:hidden">○</span>
+                    <span className="hidden group-hover:inline">●</span>
+                  </button>
+                </div>
               </div>
             </div>
+            
           </div>
         </div>
       </div>
@@ -709,12 +736,12 @@ export function Game({
       
       <div className="flex flex-row gap-5">
         <button className="group" onClick={endGame}>
-          End Game <span className="group-hover:hidden">◇</span>
-          <span className="hidden group-hover:inline">◆</span>
+          End Game <span className="group-hover:hidden">⬦</span>
+          <span className="hidden group-hover:inline">⬥</span>
         </button>
         <button className="group" onClick={playAgain}>
-          Play Again <span className="group-hover:hidden">◇</span>
-          <span className="hidden group-hover:inline">◆</span>
+          Play Again <span className="group-hover:hidden">⬦</span>
+          <span className="hidden group-hover:inline">⬥</span>
         </button>
       </div>
       

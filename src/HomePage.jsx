@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabaseClient';
 
-export function HomePage({ createGame, setCreateGame, gameId, setGameId, joinGame, setJoinGame, createSet, setCreateSet }) {
+export function HomePage({ createGame, setCreateGame, gameId, setGameId, joinGame, setJoinGame, createSet, setCreateSet, privateSets, setPrivateSets, userEmail, viewSets, setViewSets }) {
 
     const [currentGameId, setCurrentGameId] = useState(null);
     const [validId, setValidId] = useState(null);
@@ -39,26 +39,41 @@ export function HomePage({ createGame, setCreateGame, gameId, setGameId, joinGam
         };
     };
 
+    const loadMySets = async () => {
+        setViewSets(true);
+
+        const { data, error } = await supabase
+          .from('public_card_sets')
+          .select('*')
+          .eq('user_email', userEmail.current)
+          console.log(data)
+          setPrivateSets(data)
+        }
+
     return (
         <div>
             {!joinGame && (
                 <div className='flex flex-col items-center gap-5'>
                     <div className='flex flex-row gap-10 mt-2'>
-                        <button className='rounded-md p-1 group' onClick={updateCreateGame}>Create Game <span className="group-hover:hidden">◇</span>
-                        <span className="hidden group-hover:inline">◆</span></button>
-                        <button className='rounded-md p-1 group' onClick={() => setJoinGame(true)}>Join Game <span className="group-hover:hidden">◇</span>
-                        <span className="hidden group-hover:inline">◆</span></button>
+                        <button className='rounded-md p-1 group' onClick={updateCreateGame}>Create Game <span className="group-hover:hidden">⬦</span>
+                        <span className="hidden group-hover:inline">⬥</span></button>
+                        <button className='rounded-md p-1 group' onClick={() => setJoinGame(true)}>Join Game <span className="group-hover:hidden">⬦</span>
+                        <span className="hidden group-hover:inline">⬥</span></button>
                     </div>
-                    <button className='group pink margin-top-s' onClick={() => setCreateSet(true)}>Create Custom Set <span className="group-hover:hidden">✧</span>
-                    <span className="hidden group-hover:inline">✦</span></button>
+                    <div className='flex flex-row gap-10 margin-top-s'>
+                        <button className='group pink' onClick={() => setCreateSet(true)}>Create Set <span className="group-hover:hidden">✧</span>
+                        <span className="hidden group-hover:inline">✦</span></button>
+                        <button className='group pink' onClick={loadMySets}>My Sets <span className="group-hover:hidden">⬨</span>
+                        <span className="hidden group-hover:inline">⬧ </span></button>
+                    </div>
                 </div>
             )}
             {joinGame && (
                 <div>
                     <div className='flex flex-row gap-2 mt-2'>
                         <input className={`bg-white rounded-md text-black pl-1.5 w-45 ${joinGame ? 'block' : 'hidden'}`} onChange={(e) => setCurrentGameId(e.target.value)}/>
-                        <button className={`group`} onClick={() => updateJoinGame(currentGameId)}>Enter <span className="group-hover:hidden">◇</span>
-                        <span className="hidden group-hover:inline">◆</span></button>
+                        <button className={`group`} onClick={() => updateJoinGame(currentGameId)}>Enter <span className="group-hover:hidden">⬦</span>
+                        <span className="hidden group-hover:inline">⬥</span></button>
                         </div>
                         <p className={` mt-2 ${validId === false ? 'block' : 'hidden'}`}>That code is invalid.</p>
                 </div>

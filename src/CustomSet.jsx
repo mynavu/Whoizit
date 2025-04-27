@@ -4,11 +4,8 @@ import { supabase } from '../supabaseClient';
 
 export function CustomSet({ createSet, setCreateSet, session }) {
     const [currentTitle, setCurrrentTitle] = useState('');
-    // const [title, setTitle] = useState('');
     const [currentName, setCurrrentName] = useState('');
-    // const [name, setName] = useState('');
     const [currentUrl, setCurrentUrl] = useState('');
-    // const [url, setUrl] = useState('');
     const [customCards, setCustomCards] = useState([]);
     const formRef = useRef();
     //session.user.user_metadata;
@@ -94,7 +91,7 @@ export function CustomSet({ createSet, setCreateSet, session }) {
                 <label htmlFor='setTitle'>Name of Set:</label>
                 <input className="bg-white rounded-md text-sm w-full" id='setTitle' onChange={(e) => setCurrrentTitle(e.target.value)}/>
             </div>
-            <p>New Card</p>
+            <p>Add New Card</p>
             <form className='flex flex-col justify-center gap-3 blue-border rounded-2xl padding-l'
             ref={formRef}
             onSubmit={(e) => {
@@ -122,8 +119,8 @@ export function CustomSet({ createSet, setCreateSet, session }) {
                     />
                 </div>
                 <button type="submit" className="group ">
-                    Add to current set <span className="group-hover:hidden">◇</span>
-                    <span className="hidden group-hover:inline">◆</span>
+                    Add to current set <span className="group-hover:hidden">⬦</span>
+                    <span className="hidden group-hover:inline">⬥</span>
                 </button>
             </form>
             <div></div>
