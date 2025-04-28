@@ -3,11 +3,13 @@ import { supabase } from '../supabaseClient';
 
 
 export function CustomSet({ createSet, setCreateSet, session }) {
-    const [currentTitle, setCurrrentTitle] = useState('');
-    const [currentName, setCurrrentName] = useState('');
+    const [currentTitle, setCurrentTitle] = useState('');
+    const [currentName, setCurrentName] = useState('');
     const [currentUrl, setCurrentUrl] = useState('');
     const [customCards, setCustomCards] = useState([]);
     const formRef = useRef();
+    const [upload, setUpload] = useState(false);
+    const fileInputRef = useRef();
     //session.user.user_metadata;
     const defaultCards = [
         'https://media-hosting.imagekit.io/e880a3a7b3b346a1/1.png?Expires=1840253275&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=Sa12uM5xRfbqabBWSyRVXKS-zYVnoaYDgjAcEMdBbd0oUJcq5pw0kBypc-kP680flMFJ18je6aF8x4dIZ~CEPav9iUEY0qQGyM2un8s4MrSJZLAwV0rAyD9Rw7jvyQRSgA3cXRjmBf~Ay~Pugh87ldy4nApKKHoQDUviImI3lkE4hOJYdrHRoDQ8j8GYkZdP51ONhZmZXpcIPM9nG8snrCcA8j6gnbA2nHO5NSB6IsAzAeh-ZM9MxJcVrWORoyrn1G-eVq6irLmqHXZI~KEq0AhQYFDVOZ6rNBTSCbFKVObXJq4oc-fVZ4klB88Wi1Agixdb7BittAE~KmSjJZfe~g__',
@@ -24,12 +26,29 @@ export function CustomSet({ createSet, setCreateSet, session }) {
             setCustomCards((prevCards) => [...prevCards, {name: currentName, image_url: defaultCards[randomIndex], card_id: crypto.randomUUID()}]);
         }
         formRef.current.reset();
-        setCurrrentName("");
+        setCurrentName("");
         setCurrentUrl("");
+        setUpload(false);
     }
 
     function deleteCard(id) {
         setCustomCards((prevCards) => prevCards.filter(card => card.card_id !== id));
+    }
+
+
+    async function uploadFile(file_input) {
+        setUpload(true);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setCurrentUrl(reader.result);
+        };
+        reader.readAsDataURL(file_input);
+    }
+
+    function clearUploadInput() {
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
     }
 
     async function addCustomSet() {
@@ -78,7 +97,10 @@ export function CustomSet({ createSet, setCreateSet, session }) {
       
           alert('Custom set successfully added!');
           setCustomCards([]);
-          setCurrrentTitle('');
+          setCurrentTitle('');
+          setCurrentName("");
+          setCurrentUrl("");
+          setUpload(false);
         } catch (error) {
           console.error('Error adding custom set:', error);
           alert('Failed to add custom set. Check the console for details.');
@@ -89,7 +111,7 @@ export function CustomSet({ createSet, setCreateSet, session }) {
         <div className=" margin-top flex flex-col items-center gap-5">
             <div>
                 <label htmlFor='setTitle'>Name of Set:</label>
-                <input className="bg-white rounded-md text-sm w-full" id='setTitle' onChange={(e) => setCurrrentTitle(e.target.value)}/>
+                <input className="bg-white rounded-md text-sm w-full" id='setTitle' value={currentTitle} onChange={(e) => setCurrentTitle(e.target.value)}/>
             </div>
             <p>Add New Card</p>
             <form className='flex flex-col justify-center gap-3 blue-border rounded-2xl padding-l'
@@ -105,18 +127,38 @@ export function CustomSet({ createSet, setCreateSet, session }) {
                     className="bg-white rounded-md text-sm w-full"
                     required
                     id="cardName"
-                    onChange={(e) => setCurrrentName(e.target.value)}
+                    onChange={(e) => setCurrentName(e.target.value)}
                     />
                 </div>
-                <div>
+                <div className='flex flex-col gap-3'>
                     <label htmlFor="cardImage">URL:</label>
                     <input
                     type="url"
                     placeholder="(optional)"
                     className="bg-white rounded-md text-sm w-full"
                     id="cardImage"
-                    onChange={(e) => setCurrentUrl(e.target.value.trim())}
+                    value={!upload ? currentUrl : ''}
+                    onChange={(e) => {
+                            setCurrentUrl(e.target.value.trim());
+                            setUpload(false);
+                            clearUploadInput();
+                        }
+                    }
                     />
+                    <div className="flex items-center gap-3">
+                        <label className="cursor-pointer padding-s rounded-md light-blue blue-shade text-sm font-semibold">
+                            Choose File
+                            <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            onChange={(e) => uploadFile(e.target.files[0])}
+                            />
+                        </label>
+                        <span className="text-sm">
+                            {fileInputRef.current?.files[0]?.name || 'No file chosen'}
+                        </span>
+                    </div>
                 </div>
                 <button type="submit" className="group ">
                     Add to current set <span className="group-hover:hidden">⬦</span>

@@ -71,6 +71,10 @@ body {
   padding: 20px;
 }
 
+.padding-s {
+  padding: 2px;
+}
+
 .blue {
   color: var(--blue);
 }
@@ -139,6 +143,14 @@ body {
 
 .yellow-background {
   background: var(--yellow);
+}
+
+.blue-shade {
+  background: var(--blue);
+}
+
+.blue-shade:hover {
+  background: #55aaff;
 }
 
 button:hover {
