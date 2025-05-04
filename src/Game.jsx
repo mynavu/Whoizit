@@ -577,7 +577,7 @@ export function Game({
                   className="w-[80px] h-[80px] object-cover rounded-xl yellow-border"
                 />
                 <p className="yellow text-sm">
-                  Chosen: {allCards.find(card => String(card.card_id) === String(oppChosen))?.cards?.name}
+                  Chosen: {allCards.find(card => String(card.card_id) === String(yourChosen))?.cards?.name}
                 </p>
               </div>
               <div className="flex flex-row flex-wrap justify-around gap-1.5">
