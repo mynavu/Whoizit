@@ -27,7 +27,9 @@ export function Game({
   oppChosen,
   setOppChosen,
   bothPlayersIn,
-  setBothPlayersIn
+  setBothPlayersIn,
+  changeSet,
+  setChangeSet
 }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -96,7 +98,6 @@ export function Game({
   }
 
   function endGame() {
-    console.log("end game");
     channelRef.current.send({
       type: 'broadcast',
       event: 'endGame',
@@ -122,6 +123,9 @@ export function Game({
     setGuess(null);
     setWinner(null);
     setBothPlayersIn(false); // Reset to force re-sync
+    // NEW
+    loadSetOrSendSet();
+    setChangeSet(false);
     hasInitialized.current = false;
 
     // Notify other player to reset
@@ -146,6 +150,9 @@ export function Game({
   }
 
   useEffect(() => {
+    console.log('hello', { gameId, session });
+    window.addEventListener("beforeunload", beforeUnloadHandler);
+
     channelRef.current = supabase.channel(gameId, {
       config: {
         broadcast: { self: true },
@@ -155,36 +162,23 @@ export function Game({
 
     channelRef.current.on('presence', { event: 'sync' }, () => {
       const usersOnline = channelRef.current.presenceState();
-      if (Object.keys(usersOnline).length > 2) {
-        console.log('Only two players allowed')
-        channelRef.current.unsubscribe();
-      } else if (Object.keys(usersOnline).length === 2) {
-        /*
-        console.log(
-          'Users in the room:',
-          usersOnline[Object.keys(usersOnline)[0]][0].name,
-          usersOnline[Object.keys(usersOnline)[1]][0].name
-        );
-        */
+      if (Object.keys(usersOnline).length === 2) {
         // Check if both users are ready
         const allReady = Object.values(usersOnline).every((user) => user[0].ready);
-        //console.log("allReady", allReady);
         if (allReady) {
           loadSetOrSendSet();
           if (winner === null) {
             setBothPlayersIn(true);
-            //console.log("bothPlayersIn", bothPlayersIn)
+            console.log("bothPlayersIn", bothPlayersIn)
           }
         }
 
         if (startingPlayer.current === null) {
             let first = usersOnline[Object.keys(usersOnline)[0]][0].name;
             let second = usersOnline[Object.keys(usersOnline)[1]][0].name;
-            startingPlayer.current = usersOnline[Object.keys(usersOnline)[0]][0].name;
+            startingPlayer.current = first;
             setFirstPlayer(first);
             setSecondPlayer(second);
-            console.log("startingPlayer.current", startingPlayer.current);
-            console.log("firstPlayer", firstPlayer);
             if (first === session?.user?.user_metadata?.name) {
                 setEnableChoice(true);
             }
@@ -215,7 +209,6 @@ export function Game({
       } else {
         setWinner(payload.payload.user_name);
         setBothPlayersIn(false);
-        //celebrate();
       }
     });
 
@@ -287,7 +280,6 @@ export function Game({
     // Handle game reset broadcast
     channelRef.current.on('broadcast', { event: 'resetGame' }, (payload) => {
       if (payload.payload.user_name !== session?.user?.user_metadata?.name) {
-        // Reset local state for the other player
         setYourChoice(null);
         setOppChosen(null);
         setMessages([]);
@@ -313,6 +305,13 @@ export function Game({
       }
     });
 
+    channelRef.current.on('broadcast', { event: 'otherPlayerLeft' }, async (payload) => {
+      alert("Other player has left")
+      setTimeout(() => {
+        window.location.reload();
+      }, "1000")
+    });
+
     channelRef.current.on('broadcast', { event: 'endGame' }, (payload) => {
       window.location.reload();
     });
@@ -329,7 +328,7 @@ export function Game({
     return () => {
       channelRef.current.unsubscribe();
     };
-  }, [session]);
+  }, []);
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -520,6 +519,17 @@ export function Game({
     }
   }
 
+  const beforeUnloadHandler = (event) => {
+    console.log("exiting");
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'otherPlayerLeft',
+      payload: {
+        user_name: session?.user?.user_metadata?.name,
+      },
+    });
+  };
+
   return (
     <div className="flex flex-col items-center">
     {allCards.length > 0 && !bothPlayersIn && winner === null && <p>Waiting for other player...</p>}
@@ -623,6 +633,12 @@ export function Game({
                 <div></div>
                 <p className="title-font">⬗ Game Log ⬖</p>
                   <div className="flex flex-col overflow-y-auto blue w-full break-words p-2 light-blue-background rounded-2xl text-sm gap-1 h-full scrollbar-hide padding">
+                    <div
+                        key='rules'
+                        className={`p-2 whitespace-pre-wrap padding rounded-xl light-blue rounded-br-none bg-blue-400`}
+                    > 
+                      Rules: Both players will take turns to either <span className='yellow'>ASK</span> or <span className='yellow'>GUESS</span>. If you choose <span className='yellow'>GUESS</span>: press <span className='yellow'>QUESTION</span> to send your question. To answer the other player's question press <span className='yellow'>ANSWER</span> to respond. Otherwise you can chat by pressing <span className='yellow'>SEND</span>. The first player is <span className='yellow'>{firstPlayer}</span>.
+                    </div>
                     {messages.map((msg) => (
                       <div
                       key={crypto.randomUUID()}
@@ -744,7 +760,12 @@ export function Game({
           <span className="hidden group-hover:inline">⬥</span>
         </button>
       </div>
-      
+      {changeSet &&
+        <div>
+          <p className='yellow margin-top'>Set changed! Press 'Play Again' to play with new set.</p>
+        </div>
+      }
+      {!changeSet && 
       <div>
         <div className="flex flex-col items-center gap-5">
           <p>Your opponent chose:</p>
@@ -757,6 +778,7 @@ export function Game({
           </p>
         </div>
       </div>
+      }
     </div>
   </div>
   );

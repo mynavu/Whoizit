@@ -22,6 +22,7 @@ function App() {
   const [createSet, setCreateSet] = useState(false);
   const [viewSets, setViewSets] = useState(false);
   const [editSet, setEditSet] = useState([]);
+  const [changeSet, setChangeSet] = useState(false);
 
   const allCardsRef = useRef([]);
   const userEmail = useRef();
@@ -33,7 +34,9 @@ function App() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
-      
+      if (session && userEmail.current) {   // wait until session is ready
+        loadSet();
+      }
     })
     const {
       data: { subscription },
@@ -76,11 +79,6 @@ function App() {
     setCardSets(data.map((set) => ({name: set.name, id: set.id})));
   }
 
-  useEffect(() => {
-    if (session && userEmail.current) {   // wait until session is ready
-      loadSet();
-    }
-  }, [session]);
 
   async function confirmSet() {
     setCardSet(currentCardSet);
@@ -97,6 +95,7 @@ function App() {
     .eq('card_set_id', currentCardSet); 
     setAllCards(data);
     allCardsRef.current = data;
+    console.log("allCardsRef.current", allCardsRef.current)
   
     const promises = data.map(({ cards }) => {
       return new Promise((resolve, reject) => {
@@ -222,6 +221,8 @@ function App() {
             setOppChosen={setOppChosen}
             bothPlayersIn={bothPlayersIn}
             setBothPlayersIn={setBothPlayersIn}
+            changeSet={changeSet}
+            setChangeSet={setChangeSet}
           />
         )}
         
@@ -238,6 +239,23 @@ function App() {
         <p className={`group ${ allCards.length === 0 && (gameId !== null && joinGame && cardSet === null) ? 'block' : 'hidden'}`}>Loading...</p>
         <div></div>
         <div></div>
+        {winner && createGame && !changeSet &&
+        <div className='flex flex-col gap-5 items-center'>
+          <div>Play with a new set?</div>
+          <div className='flex flex-row gap-5 group'>
+            <select className='blue-background light-blue rounded-md' id="setOfSetss" defaultValue={currentCardSet} onChange={(e) => setCurrentCardSet(e.target.value)}>
+              {cardSets.map((set) => (
+                <option key={set.id} value={set.id}>{set.name}</option>
+              ))}
+            </select>
+            <button className='rounded-md p-0.5' onClick={() => {
+              confirmSet();
+              setChangeSet(true);
+            }}>Change set <span className="group-hover:hidden">⬦</span>
+            <span className="hidden group-hover:inline">⬥</span></button>
+          </div>
+        </div>
+        }
       </div>
     )
   }

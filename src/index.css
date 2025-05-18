@@ -103,6 +103,10 @@ body {
   color: var(--pink);
 }
 
+.pink-background {
+  background: var(--pink);
+}
+
 .blue-border {
   border: var(--blue) solid 3px;
 }

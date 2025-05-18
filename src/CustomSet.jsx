@@ -12,9 +12,9 @@ export function CustomSet({ createSet, setCreateSet, session }) {
     const fileInputRef = useRef();
     //session.user.user_metadata;
     const defaultCards = [
-        'https://media-hosting.imagekit.io/e880a3a7b3b346a1/1.png?Expires=1840253275&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=Sa12uM5xRfbqabBWSyRVXKS-zYVnoaYDgjAcEMdBbd0oUJcq5pw0kBypc-kP680flMFJ18je6aF8x4dIZ~CEPav9iUEY0qQGyM2un8s4MrSJZLAwV0rAyD9Rw7jvyQRSgA3cXRjmBf~Ay~Pugh87ldy4nApKKHoQDUviImI3lkE4hOJYdrHRoDQ8j8GYkZdP51ONhZmZXpcIPM9nG8snrCcA8j6gnbA2nHO5NSB6IsAzAeh-ZM9MxJcVrWORoyrn1G-eVq6irLmqHXZI~KEq0AhQYFDVOZ6rNBTSCbFKVObXJq4oc-fVZ4klB88Wi1Agixdb7BittAE~KmSjJZfe~g__',
-        'https://media-hosting.imagekit.io/c9fb4076878e450e/2.png?Expires=1840253476&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=qowqYySb7IS5ldZPJEviQZAHGO7tQErPW-ivMo6TYTao~~SGBrYjO4-bmmfETU-CMGHJgCfIAIiwIQnq-SDtQSQb3OXtgIoeYtKgLqhDLAOSs2KHoXreXEoaQMhAmBSWkpT3u6HR6KVuyiitm34T36kJ3k49VwRowvr~jdDUIlVcp-vqHvfzPx6fnIqnqlo99hfgWpBYBbGjtrylNI3nRCeo0IJKCpQQ3ZxnjoJv4iUbTCefQ6UrVoQKq5EPocq2H9CgJMsoega2tcnKD1A07Hy9p-j3FgZH7eArctF~c3aZQEnD1PjEtG3oCvGZeKOtss7976ZtenU~oWtMmsSExA__',
-        'https://media-hosting.imagekit.io/52a359c5f0254d63/3.png?Expires=1840253502&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=iSlGoU4ig3lpv-1HNswdaF3Pwva6KaBuAYK-gYIStmYKR~Dni6cmn4iLI2IinRIO5SwLlbasFdAanOUBy7l4yLM3TGl9djWwXEoAM74AFhzLBGnuPSV74-h3cqBQyMrCW8RwSekD0Hj-sgdgakxVRNi5oNg4UMRNowgQyZjIoEZrHz0ZIN~DeVeifxkAo72PCUikIut1ZmXhdMJyQQRlg9eVjeywf1bg-1SJiwQvRnaCG9ilkyRaL28U6kDSL5KBU4fK1mNL4HlU1SnVfJHEg3DgjFlsp3xnBv9T2to1W~WTUP7Q3f3oTE7swLgStC6i2yyIqxGAPh437cL549GaAA__'
+        'https://zhurpemyccmmtrmzzfmc.supabase.co/storage/v1/object/public/default-pics//1.png',
+        'https://zhurpemyccmmtrmzzfmc.supabase.co/storage/v1/object/public/default-pics//2.png',
+        'https://zhurpemyccmmtrmzzfmc.supabase.co/storage/v1/object/public/default-pics//3.png'
      ]
 
 
@@ -111,7 +111,7 @@ export function CustomSet({ createSet, setCreateSet, session }) {
         <div className=" margin-top flex flex-col items-center gap-5">
             <div>
                 <label htmlFor='setTitle'>Name of Set:</label>
-                <input className="bg-white rounded-md text-sm w-full" id='setTitle' value={currentTitle} onChange={(e) => setCurrentTitle(e.target.value)}/>
+                <input className="bg-white rounded-md text-sm w-full text-black" id='setTitle' value={currentTitle} onChange={(e) => setCurrentTitle(e.target.value)}/>
             </div>
             <p>Add New Card</p>
             <form className='flex flex-col justify-center gap-3 blue-border rounded-2xl padding-l'
@@ -124,7 +124,7 @@ export function CustomSet({ createSet, setCreateSet, session }) {
                 <div>
                     <label htmlFor="cardName">Name:</label>
                     <input
-                    className="bg-white rounded-md text-sm w-full"
+                    className="bg-white rounded-md text-sm w-full text-black"
                     required
                     id="cardName"
                     onChange={(e) => setCurrentName(e.target.value)}
@@ -135,7 +135,7 @@ export function CustomSet({ createSet, setCreateSet, session }) {
                     <input
                     type="url"
                     placeholder="(optional)"
-                    className="bg-white rounded-md text-sm w-full"
+                    className="bg-white rounded-md text-sm w-full text-black"
                     id="cardImage"
                     value={!upload ? currentUrl : ''}
                     onChange={(e) => {

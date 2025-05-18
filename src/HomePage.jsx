@@ -29,7 +29,6 @@ export function HomePage({ createGame, setCreateGame, gameId, setGameId, joinGam
         } else { 
             setValidId(true);
             setGameId(data.id);
-            console.log("valid with", data.id);
             const response = await supabase
             .from('game_ids')
             .delete()
