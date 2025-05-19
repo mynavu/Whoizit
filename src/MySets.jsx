@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabaseClient';
 
-export function MySets({ userEmail, viewSets, setViewSets, privateSets, setPrivateSets, editSet, setEditSet }) {
+export function MySets({ cardSetState, updateCardSetState, userEmail }) {
 
     const [editSetId, setEditSetId] = useState(null);
     const [editDeletes, setEditDeletes] = useState([]);
@@ -25,7 +25,7 @@ export function MySets({ userEmail, viewSets, setViewSets, privateSets, setPriva
           .select('*')
           .eq('user_email', userEmail.current)
           console.log('update data');
-          setPrivateSets(data)
+          updateCardSetState({privateSets: data});
     }
 
     const deleteSet = async (set_id) => {
@@ -88,9 +88,7 @@ export function MySets({ userEmail, viewSets, setViewSets, privateSets, setPriva
         )
         `)
         .eq('card_set_id', set_id); 
-        setEditSet(data);
-
-        console.log(data);
+        updateCardSetState({editSet: data});
     }
 
     function addToSet() {    
@@ -127,12 +125,12 @@ export function MySets({ userEmail, viewSets, setViewSets, privateSets, setPriva
 
     function handleEditDeletes(id) {
         setEditDeletes((prevCards) => [...prevCards, id]);
-        setEditSet((prevCards) => prevCards.filter(card => card.card_id !== id));
+        updateCardSetState({editSet: cardSetState.editSet.filter(card => card.card_id !== id)});
     }
 
 
     function clearCurrentEdit() {
-        setEditSet([]);
+        updateCardSetState({editSet: []});
         setEditAdds([]);
         setEditDeletes([]);
         setEditSetId(null);
@@ -175,12 +173,12 @@ export function MySets({ userEmail, viewSets, setViewSets, privateSets, setPriva
     
     return (
         <div className='margin-top flex flex-col items-center gap-5'>
-            {privateSets.length === 0 && (
+            {cardSetState.privateSets.length === 0 && (
                 <p>You have no custom sets.</p>
             )}
-            {editSet.length === 0 && privateSets.length > 0 && (
+            {cardSetState.editSet.length === 0 && cardSetState.privateSets.length > 0 && (
                 <div>
-                    {privateSets.map((set, index) => (
+                    {cardSetState.privateSets.map((set, index) => (
                         <div className="flex justify-between items-center gap-10 w-full" key={index}>
                             <div>{set.name}</div>
                             <div className="flex gap-1">
@@ -195,7 +193,7 @@ export function MySets({ userEmail, viewSets, setViewSets, privateSets, setPriva
                     ))}
                 </div>
             )}
-            {editSet.length > 0 && (
+            {cardSetState.editSet.length > 0 && (
                 <div className='flex flex-col items-center gap-5'>
                     <p>Add New Card</p>
                     <form className='flex flex-col justify-center gap-3 blue-border rounded-2xl padding-l'
@@ -277,7 +275,7 @@ export function MySets({ userEmail, viewSets, setViewSets, privateSets, setPriva
                     <p>Cards in Current Set</p>
                 </div>
                 <div className="flex flex-row flex-wrap justify-around gap-5 w-130">
-                    {editSet.map((card, index) => (
+                    {cardSetState.editSet.map((card, index) => (
                         <div key={index} className="flex flex-col items-center">
                             <img
                             key={card.card_id}

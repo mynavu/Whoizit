@@ -6,35 +6,70 @@ import { CustomSet } from './CustomSet';
 import { MySets } from './MySets';
 
 function App() {
+  // Auth state
   const [session, setSession] = useState(null);
+  const userEmail = useRef();
 
+  //Game state
+  const [gameState, setGameState] = useState({
+    createGame: false,
+    gameId: null,
+    joinGame: false,
+    winner: null,
+    yourChosen: null,
+    oppChosen: null,
+    bothPlayersIn: false
+  })
+
+  /*
   const [createGame, setCreateGame] = useState(false);
   const [gameId, setGameId] = useState(null);
   const [joinGame, setJoinGame] = useState(false);
   const [winner, setWinner] = useState(null);
+  const [yourChosen, setYourChosen] = useState(null);
+  const [oppChosen, setOppChosen] = useState(null);
+  const [bothPlayersIn, setBothPlayersIn] = useState(false);
+  */
+
+    /*
   const [cardSets, setCardSets] = useState([]);
   const [currentCardSet, setCurrentCardSet] = useState(null);
   const [cardSet, setCardSet] = useState(null);
   const [allCards, setAllCards] = useState([]);
-  const [yourChosen, setYourChosen] = useState(null);
-  const [oppChosen, setOppChosen] = useState(null);
-  const [bothPlayersIn, setBothPlayersIn] = useState(false);
   const [createSet, setCreateSet] = useState(false);
   const [viewSets, setViewSets] = useState(false);
   const [editSet, setEditSet] = useState([]);
   const [changeSet, setChangeSet] = useState(false);
+  const [privateSets, setPrivateSets] = useState([]);
+  */
+
+  const [cardSetState, setCardSetState] = useState({
+    cardSets: [],
+    currentCardSet: null,
+    cardSet: null,
+    allCards: [],
+    createSet: false,
+    viewSets: false,
+    editSet: [],
+    changeSet: false,
+    privateSets: []
+  })
 
   const allCardsRef = useRef([]);
-  const userEmail = useRef();
 
-  const [privateSets, setPrivateSets] = useState([]);
+  const updateGameState = (updates) => {
+    setGameState(prev => ({...prev, ...updates}))
+  };
 
-    
+  const updateCardSetState = (updates) => {
+    setCardSetState(prev => ({...prev, ...updates}))
+  };
   
+  // Auth
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
-      if (session && userEmail.current) {   // wait until session is ready
+      if (session && userEmail.current) {
         loadSet();
       }
     })
@@ -47,16 +82,14 @@ function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  //console.log(session, session?.user?.user_metadata?.email)
-
-  // SIGN IN
+  // Sign In
   const signIn = async () => {
     supabase.auth.signInWithOAuth({
       provider: 'google',
     })
   };
 
-  // SIGN OUT
+  // Sign Out
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
   };
@@ -76,12 +109,12 @@ function App() {
       console.error('Error loading sets:', error);
       return;
     }
-    setCardSets(data.map((set) => ({name: set.name, id: set.id})));
+    //setCardSets(data.map((set) => ({name: set.name, id: set.id})));
+    updateCardSetState({cardSets: data.map((set) => ({name: set.name, id: set.id}))})
   }
 
-
   async function confirmSet() {
-    setCardSet(currentCardSet);
+    updateCardSetState({cardSet: cardSetState.currentCardSet})
     const { data, error } = await supabase
     .from('cards_in_sets')
     .select(`
@@ -92,8 +125,9 @@ function App() {
         image_url
       )
     `)
-    .eq('card_set_id', currentCardSet); 
-    setAllCards(data);
+    .eq('card_set_id', cardSetState.currentCardSet); 
+    //setAllCards(data);
+    updateCardSetState({allCards: data})
     allCardsRef.current = data;
     console.log("allCardsRef.current", allCardsRef.current)
   
@@ -111,13 +145,14 @@ function App() {
       console.log('All images preloaded successfully');
     } catch (err) {
       console.error('Image preloading error:', err);
-      setError(err.message);
     }
 
     if (error) {console.log(error.message)}
-    console.log(currentCardSet)
+    console.log(cardSetState.currentCardSet)
     console.log(data);
   }
+
+
 
   if (!session) {
     return (
@@ -132,7 +167,15 @@ function App() {
         </div>
       </div>
     )
-  } else {
+  } 
+
+    const showTitle = (gameState.oppChosen === null || gameState.yourChosen === null) && !cardSetState.createSet && !cardSetState.viewSets;
+    const showChooseWisely = gameState.yourChosen === null && cardSetState.allCards.length > 0 && gameState.bothPlayersIn;
+    const showGameId = gameState.gameId !== null && cardSetState.cardSet !== null && !gameState.bothPlayersIn;
+    const showBackButton = (cardSetState.editSet.length === 0 && cardSetState.viewSets) || cardSetState.createSet || cardSetState.allCards.length === 0 && ((gameState.gameId === null && gameState.joinGame && cardSetState.cardSet === null) || (!gameState.joinGame && gameState.gameId !== null));
+    const showLoading = cardSetState.allCards.length === 0 && (gameState.gameId !== null && gameState.joinGame && cardSetState.cardSet === null);
+    const showChangeSetOption = gameState.winner && gameState.createGame && !cardSetState.changeSet;
+
     return (
       <div className='flex flex-col items-center gap-5'>
         <div className="flex flex-row justify-between items-start w-full px-20 mt-4">
@@ -141,39 +184,31 @@ function App() {
           <div>{session.user.user_metadata.name}</div>
         </div>
         
-        <div className={`flex flex-col items-center gap-5 ${(oppChosen === null || yourChosen === null) && !createSet && !viewSets ? "block" : "hidden"}`}>
-          <div className='title-font text-5xl tracking-wider margin-top'>{yourChosen === null && allCards.length > 0 && bothPlayersIn ? 'CHOOSE WISELY' : 'WHOIZIT?'}</div>
-          <p><span className="material-symbols-outlined icon-big">{yourChosen === null && allCards.length > 0 && bothPlayersIn ? 'playing_cards' : 'groups_3'}</span></p>
-          <div className={gameId !== null && cardSet !== null && !bothPlayersIn ? 'flex flex-col items-center' : 'hidden' }>
+        <div className={`flex flex-col items-center gap-5 ${showTitle ? "block" : "hidden"}`}>
+          <div className='title-font text-5xl tracking-wider margin-top'>{showChooseWisely ? 'CHOOSE WISELY' : 'WHOIZIT?'}</div>
+          <p><span className="material-symbols-outlined icon-big">{showChooseWisely ? 'playing_cards' : 'groups_3'}</span></p>
+          <div className={showGameId ? 'flex flex-col items-center' : 'hidden' }>
             <div>Your code is:</div>
-            <div className='title-font text-xl pink'>{gameId}</div>
+            <div className='title-font text-xl pink'>{gameState.gameId}</div>
           </div>
         </div>
 
-        {!viewSets && !createSet && gameId === null && (
+        {!cardSetState.viewSets && !cardSetState.createSet && gameState.gameId === null && (
           <HomePage 
-            createGame={createGame} 
-            setCreateGame={setCreateGame} 
-            gameId={gameId} 
-            setGameId={setGameId} 
-            joinGame={joinGame} 
-            setJoinGame={setJoinGame} 
-            createSet={createSet} 
-            setCreateSet={setCreateSet}
-            privateSets={privateSets}
-            setPrivateSets={setPrivateSets}
+            gameState={gameState}
+            updateGameState={updateGameState}
+            cardSetState={cardSetState}
+            updateCardSetState={updateCardSetState}
             userEmail={userEmail}
-            viewSets={viewSets}
-            setViewSets={setViewSets}
           />
         )}
 
-        {createGame && cardSet === null && (
+        {gameState.createGame && cardSetState.cardSet === null && (
           <div>
             <div className='flex flex-row gap-5 group'>
-                    <select className='blue-background light-blue rounded-md' id="setOfSetss" defaultValue="" onChange={(e) => setCurrentCardSet(e.target.value)}>
+                    <select className='blue-background light-blue rounded-md' id="setOfSetss" defaultValue="" onChange={(e) => updateCardSetState({currentCardSet: e.target.value})}>
                       <option value="">Choose set</option>
-                      {cardSets.map((set) => (
+                      {cardSetState.cardSets.map((set) => (
                         <option key={set.id} value={set.id}>{set.name}</option>
                       ))}
                     </select>
@@ -183,52 +218,33 @@ function App() {
           </div>
         )}
 
-        {createSet && (
+        {cardSetState.createSet && (
           <CustomSet 
-          createSet={createSet} 
-          setCreateSet={setCreateSet}
           session={session}
           />
         )}
 
-        {viewSets && (
+        {cardSetState.viewSets && (
           <MySets 
+          cardSetState={cardSetState}
+          updateCardSetState={updateCardSetState}
           userEmail={userEmail}
-          viewSets={viewSets}
-          setViewSets={setViewSets}
-          privateSets={privateSets}
-          setPrivateSets={setPrivateSets}
-          editSet={editSet} 
-          setEditSet={setEditSet}
           />
         )}
 
-        {gameId !== null && (
-          <Game 
-            session={session} 
-            setSession={setSession} 
-            gameId={gameId} 
-            setGameId={setGameId} 
-            setWinner={setWinner} 
-            joinGame={joinGame} 
-            allCards={allCards}
-            setAllCards={setAllCards}
+        {gameState.gameId !== null && (
+          <Game  
+            gameState={gameState}
+            updateGameState={updateGameState}
+            cardSetState={cardSetState}
+            updateCardSetState={updateCardSetState}
             allCardsRef={allCardsRef}
-            winner={winner}
-            yourChosen={yourChosen}
-            setYourChosen={setYourChosen}
-            oppChosen={oppChosen}
-            setOppChosen={setOppChosen}
-            bothPlayersIn={bothPlayersIn}
-            setBothPlayersIn={setBothPlayersIn}
-            changeSet={changeSet}
-            setChangeSet={setChangeSet}
+            session={session} 
           />
         )}
         
-        
         <button 
-            className={`group ${ (editSet.length === 0 && viewSets) || createSet || allCards.length === 0 && ((gameId === null && joinGame && cardSet === null) || (!joinGame && gameId !== null)) ? 'block' : 'hidden'}`}
+            className={`group ${showBackButton ? 'block' : 'hidden'}`}
             onClick={() => {
                 window.location.reload();
             }}
@@ -236,21 +252,21 @@ function App() {
             <span className="group-hover:hidden">▹</span>
             <span className="hidden group-hover:inline">▸</span> Back
         </button>
-        <p className={`group ${ allCards.length === 0 && (gameId !== null && joinGame && cardSet === null) ? 'block' : 'hidden'}`}>Loading...</p>
+        <p className={`group ${showLoading ? 'block' : 'hidden'}`}>Loading...</p>
         <div></div>
         <div></div>
-        {winner && createGame && !changeSet &&
+        {showChangeSetOption &&
         <div className='flex flex-col gap-5 items-center'>
           <div>Play with a new set?</div>
           <div className='flex flex-row gap-5 group'>
-            <select className='blue-background light-blue rounded-md' id="setOfSetss" defaultValue={currentCardSet} onChange={(e) => setCurrentCardSet(e.target.value)}>
-              {cardSets.map((set) => (
+            <select className='blue-background light-blue rounded-md' id="setOfSetss" defaultValue={cardSetState.currentCardSet} onChange={(e) => updateCardSetState({currentCardSet: e.target.value})}>
+              {cardSetState.cardSets.map((set) => (
                 <option key={set.id} value={set.id}>{set.name}</option>
               ))}
             </select>
             <button className='rounded-md p-0.5' onClick={() => {
               confirmSet();
-              setChangeSet(true);
+              updateCardSetState({changeSet: true})
             }}>Change set <span className="group-hover:hidden">⬦</span>
             <span className="hidden group-hover:inline">⬥</span></button>
           </div>
@@ -258,7 +274,6 @@ function App() {
         }
       </div>
     )
-  }
 }
 
 export default App

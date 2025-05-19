@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabaseClient';
 
 
-export function CustomSet({ createSet, setCreateSet, session }) {
+export function CustomSet({ session }) {
+
     const [currentTitle, setCurrentTitle] = useState('');
     const [currentName, setCurrentName] = useState('');
     const [currentUrl, setCurrentUrl] = useState('');

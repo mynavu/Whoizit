@@ -11,26 +11,8 @@ function shuffle(array) {
   return array;
 }
 
-export function Game({
-  session,
-  setSession,
-  gameId,
-  setGameId,
-  setWinner,
-  joinGame,
-  allCards,
-  setAllCards,
-  allCardsRef,
-  winner,
-  yourChosen,
-  setYourChosen,
-  oppChosen,
-  setOppChosen,
-  bothPlayersIn,
-  setBothPlayersIn,
-  changeSet,
-  setChangeSet
-}) {
+export function Game({gameState, updateGameState, cardSetState, updateCardSetState, allCardsRef, session}) {
+
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const channelRef = useRef(null);
@@ -109,9 +91,9 @@ export function Game({
 
   function playAgain() {
     setYourChoice(null);
-    setOppChosen(null);
+    updateGameState({oppChosen: null});
     setMessages([]);
-    setYourChosen(null);
+    updateGameState({yourChosen: null});
     setCurrentChosen(null);
     setYourSet(shuffle([...yourSet]));
     setOppSet(shuffle([...oppSet]));
@@ -121,11 +103,11 @@ export function Game({
     setEnableChoice(false);
     setCurrentGuess(null);
     setGuess(null);
-    setWinner(null);
-    setBothPlayersIn(false); // Reset to force re-sync
+    updateGameState({winner: null});
+    updateGameState({bothPlayersIn: false});
     // NEW
     loadSetOrSendSet();
-    setChangeSet(false);
+    updateCardSetState({changeSet: false});
     hasInitialized.current = false;
 
     // Notify other player to reset
@@ -150,10 +132,9 @@ export function Game({
   }
 
   useEffect(() => {
-    console.log('hello', { gameId, session });
     window.addEventListener("beforeunload", beforeUnloadHandler);
 
-    channelRef.current = supabase.channel(gameId, {
+    channelRef.current = supabase.channel(gameState.gameId, {
       config: {
         broadcast: { self: true },
         presence: { key: session?.user?.id },
@@ -167,9 +148,8 @@ export function Game({
         const allReady = Object.values(usersOnline).every((user) => user[0].ready);
         if (allReady) {
           loadSetOrSendSet();
-          if (winner === null) {
-            setBothPlayersIn(true);
-            console.log("bothPlayersIn", bothPlayersIn)
+          if (gameState.winner === null) {
+            updateGameState({bothPlayersIn: true});
           }
         }
 
@@ -200,15 +180,15 @@ export function Game({
     channelRef.current.on('broadcast', { event: 'confirmYourChosen' }, (payload) => {
       if (payload.payload.user_name === session?.user?.user_metadata?.name) {
       } else {
-        setOppChosen(payload.payload.chosen);
+        updateGameState({oppChosen: payload.payload.chosen});
       }
     });
 
     channelRef.current.on('broadcast', { event: 'callWinner' }, (payload) => {
       if (payload.payload.user_name === session?.user?.user_metadata?.name) {
       } else {
-        setWinner(payload.payload.user_name);
-        setBothPlayersIn(false);
+        updateGameState({winner: payload.payload.user_name});
+        updateGameState({bothPlayersIn: false});
       }
     });
 
@@ -236,8 +216,10 @@ export function Game({
     });
 
     channelRef.current.on('broadcast', { event: 'sendSet' }, async (payload) => {
-      if (joinGame) {
-        setAllCards(payload.payload.set);
+      console.log("allCards", payload.payload.set);
+        console.log("Chosen ID:", gameState.yourChosen);
+      if (gameState.joinGame) {
+        updateCardSetState({allCards: payload.payload.set});
         setYourSet(
           shuffle(
             payload.payload.set.map((card) => ({
@@ -281,9 +263,9 @@ export function Game({
     channelRef.current.on('broadcast', { event: 'resetGame' }, (payload) => {
       if (payload.payload.user_name !== session?.user?.user_metadata?.name) {
         setYourChoice(null);
-        setOppChosen(null);
+        updateGameState({oppChosen: null});
         setMessages([]);
-        setYourChosen(null);
+        updateGameState({yourChosen: null});
         setCurrentChosen(null);
         setYourSet(shuffle([...yourSet]));
         setOppSet(shuffle([...oppSet]));
@@ -293,8 +275,8 @@ export function Game({
         setEnableChoice(false);
         setCurrentGuess(null);
         setGuess(null);
-        setWinner(null);
-        setBothPlayersIn(false);
+        updateGameState({winner: null});
+        updateGameState({bothPlayersIn: false});
         hasInitialized.current = false;
 
         // Re-track presence
@@ -390,13 +372,13 @@ export function Game({
     e.preventDefault();
     setEnableGuess(false);
     setGuess(currentGuess);
-    let result = allCards.find(card => String(card.card_id) === String(currentGuess))?.cards?.name;
+    let result = cardSetState.allCards.find(card => String(card.card_id) === String(currentGuess))?.cards?.name;
     let winOrLose;
-    if (currentGuess === oppChosen) {
+    if (currentGuess === gameState.oppChosen) {
       winOrLose = 'correct-guess';
       setTimeout(() => {
-        setWinner(session.user.user_metadata.name);
-        setBothPlayersIn(false);
+        updateGameState({winner: session.user.user_metadata.name});
+        updateGameState({bothPlayersIn: false});
         celebrate();
         callWinner();
       }, "2000")
@@ -430,8 +412,7 @@ export function Game({
   }
 
   function confirmChosen() {
-    setYourChosen(currentChosen);
-    console.log('You chose:', currentChosen);
+    updateGameState({yourChosen: currentChosen});
     channelRef.current.send({
       type: 'broadcast',
       event: 'confirmYourChosen',
@@ -440,11 +421,6 @@ export function Game({
         chosen: currentChosen,
       },
     });
-    if (oppChosen !== null && yourChosen !== null) {
-      console.log('You chose:', yourChosen);
-      console.log('Opp chose:', oppChosen);
-      console.log('LETS BEGIN');
-    }
   }
 
   function askOrGuess(choice) {
@@ -489,7 +465,7 @@ export function Game({
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
-    if (!joinGame) {
+    if (!gameState.joinGame) {
       setYourSet(
         shuffle(
           allCardsRef.current.map((card) => ({
@@ -504,7 +480,7 @@ export function Game({
           allCardsRef.current.map((card) => ({
             name: card.cards.name,
             up: true,
-            image_url: card.cards.image_url,
+            image_url: card.cards.image_url
           }))
         )
       );
@@ -532,10 +508,10 @@ export function Game({
 
   return (
     <div className="flex flex-col items-center">
-    {allCards.length > 0 && !bothPlayersIn && winner === null && <p>Waiting for other player...</p>}
-    {allCards.length > 0 && bothPlayersIn && (
+    {cardSetState.allCards.length > 0 && !gameState.bothPlayersIn && gameState.winner === null && <p>Waiting for other player...</p>}
+    {cardSetState.allCards.length > 0 && gameState.bothPlayersIn && (
       <div>
-        <div className={`flex flex-col items-center gap-5 margin-top-s ${yourChosen === null ? 'block' : 'hidden'}`}>
+        <div className={`flex flex-col items-center gap-5 margin-top-s ${gameState.yourChosen === null ? 'block' : 'hidden'}`}>
           <div className="flex flex-row gap-5 mt-2">
             <select
               className="blue-background light-blue rounded-md"
@@ -544,7 +520,7 @@ export function Game({
               onChange={(e) => setCurrentChosen(e.target.value)}
             >
               <option value="">Choose card</option>
-              {allCards.map((card) => (
+              {cardSetState.allCards.map((card) => (
                 <option key={card.card_id} value={card.card_id}>
                   {card.cards.name}
                 </option>
@@ -557,19 +533,19 @@ export function Game({
           </div>
           {currentChosen !== null && (
             <img
-              src={allCards.find(card => String(card.card_id) === String(currentChosen))?.cards?.image_url}
+              src={cardSetState.allCards.find(card => String(card.card_id) === String(currentChosen))?.cards?.image_url}
               className="w-[300px] h-[300px] object-cover rounded-xl blue-border"
             />
           )}
         </div>
         
-        <div className={oppChosen === null && yourChosen !== null ? 'block' : 'hidden'}>
+        <div className={gameState.oppChosen === null && gameState.yourChosen !== null ? 'block' : 'hidden'}>
           Waiting for other player to choose...
         </div>
         
         <div
           className={
-            oppChosen !== null && yourChosen !== null && winner === null
+            gameState.oppChosen !== null && gameState.yourChosen !== null && gameState.winner === null
               ? 'flex flex-col gap-5'
               : 'hidden'
           }
@@ -583,11 +559,11 @@ export function Game({
               </div>
               <div className='flex flex-col items-center'>
                 <img
-                  src={allCards.find(card => String(card.card_id) === String(yourChosen))?.cards?.image_url}
+                  src={cardSetState.allCards.find(card => String(card.card_id) === String(gameState.yourChosen))?.cards?.image_url}
                   className="w-[80px] h-[80px] object-cover rounded-xl yellow-border"
                 />
                 <p className="yellow text-sm">
-                  Chosen: {allCards.find(card => String(card.card_id) === String(yourChosen))?.cards?.name}
+                  Chosen: {cardSetState.allCards.find(card => String(card.card_id) === String(gameState.yourChosen))?.cards?.name}
                 </p>
               </div>
               <div className="flex flex-row flex-wrap justify-around gap-1.5">
@@ -698,7 +674,7 @@ export function Game({
                     onChange={(e) => setCurrentGuess(e.target.value)}
                   >
                     <option value="">Guess one</option>
-                    {allCards.map((card) => (
+                    {cardSetState.allCards.map((card) => (
                       <option key={card.card_id} value={card.card_id}>
                         {card.cards.name}
                       </option>
@@ -745,9 +721,9 @@ export function Game({
       </div>
     )}
     
-    <div className={winner !== null ? 'flex flex-col items-center gap-5 margin-top-s' : 'hidden'}>
+    <div className={gameState.winner !== null ? 'flex flex-col items-center gap-5 margin-top-s' : 'hidden'}>
       <div className="title-font yellow text-5xl">
-        {winner === session.user.user_metadata.name ? "You Win!" : "You Lose"}
+        {gameState.winner === session.user.user_metadata.name ? "You Win!" : "You Lose"}
       </div>
       
       <div className="flex flex-row gap-5">
@@ -760,21 +736,21 @@ export function Game({
           <span className="hidden group-hover:inline">⬥</span>
         </button>
       </div>
-      {changeSet &&
+      {cardSetState.changeSet &&
         <div>
           <p className='yellow margin-top'>Set changed! Press 'Play Again' to play with new set.</p>
         </div>
       }
-      {!changeSet && 
+      {!cardSetState.changeSet && 
       <div>
         <div className="flex flex-col items-center gap-5">
           <p>Your opponent chose:</p>
           <img
-            src={allCards.find(card => String(card.card_id) === String(oppChosen))?.cards?.image_url}
+            src={cardSetState.allCards.find(card => String(card.card_id) === String(gameState.oppChosen))?.cards?.image_url}
             className="w-[300px] h-[300px] object-cover rounded-xl blue-border"
           />
           <p className="yellow title-font text-2xl">
-            {allCards.find(card => String(card.card_id) === String(oppChosen))?.cards?.name}
+            {cardSetState.allCards.find(card => String(card.card_id) === String(gameState.oppChosen))?.cards?.name}
           </p>
         </div>
       </div>
